@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Karakter Yönetim Sistemi</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <div class="container mt-5">
+        <h1>Güncel Haberler</h1>
+        <% if (user && user.role === 'admin') { %>
+        <form id="news-form" action="/api/news" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="title">Haber Başlığı:</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="content">Haber İçeriği:</label>
+                <textarea class="form-control" id="content" name="content" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="image">Haber Resmi:</label>
+                <input type="file" class="form-control-file" id="image" name="image" accept="image/*" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Haber Ekle</button>
+        </form>
+        <% } %>
+        <div class="news-section mt-5">
+            <% news.forEach(item => { %>
+                <div class="news-item">
+                    <h2><%= item.title %></h2>
+                    <img src="<%= item.image %>" alt="<%= item.title %>" class="img-fluid">
+                    <p><%= item.content %></p>
+                    <% if (user && user.role === 'admin') { %>
+                    <button class="btn btn-danger" onclick="deleteNews('<%= item._id %>')">Sil</button>
+                    <% } %>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function deleteNews(newsId) {
+            fetch(`/api/news/${newsId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    return response.json().then(error => {
+                        throw new Error(error.message);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert('Haber silinirken bir hata oluştu.');
+            });
+        }
+    </script>
+</body>
+</html>

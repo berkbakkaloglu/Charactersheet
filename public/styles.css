@@ -1,0 +1,48 @@
+body {
+    font-family: 'Times New Roman', Times, serif;
+    background-color: gray;
+    color: #fff;
+    font-weight: bold;
+}
+
+.navbar {
+    background-color: #343a40;
+}
+
+.navbar a {
+    color: #fff !important;
+}
+
+.container {
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+h1, h2, h3 {
+    font-family: 'Garamond', serif;
+    color: #fff;
+}
+
+label {
+    color: #fff;
+}
+
+.form-control, .form-control-file {
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #000;
+}
+
+.list-group-item {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #000;
+}
+
+.avatar {
+    border-radius: 50%;
+    border: 5px solid #fff;
+}
+
+.avatar-btn{
+    margin-bottom: 1em;
+}

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yeni Karakter Oluştur</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        body {
+            background: gray url('/images/medieval-background.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            font-weight: bold;
+        }
+        .character-container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .character-stats {
+            margin-left: 20px;
+            width: 50%;
+        }
+        .stat {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .stat label {
+            margin-right: 10px;
+            width: 150px;
+        }
+        .stat input {
+            width: 50px;
+            text-align: center;
+            margin-right: 10px;
+        }
+        .stat button {
+            margin-left: 5px;
+        }
+        .avatar {
+            max-width: 200px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border: 5px solid #fff;
+        }
+        .form-group label {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+    <div class="container mt-5">
+        <h1>Yeni Karakter Oluştur</h1>
+        <form action="/characters" method="POST">
+            <div class="form-group">
+                <label for="name">Karakter İsmi:</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="height">Boy (cm):</label>
+                <input type="number" class="form-control" id="height" name="height" required>
+            </div>
+            <div class="form-group">
+                <label for="weight">Kilo (kg):</label>
+                <input type="number" class="form-control" id="weight" name="weight" required>
+            </div>
+            <div class="form-group">
+                <label for="gender">Cinsiyet:</label>
+                <select class="form-control" id="gender" name="gender" required>
+                    <option value="male">Erkek</option>
+                    <option value="female">Kadın</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="race">Irk:</label>
+                <select class="form-control" id="race" name="race" required>
+                    <option value="Elf">Elf</option>
+                    <option value="Gnome">Gnome</option>
+                    <option value="Half Orc">Half Orc</option>
+                    <option value="Dwarf">Dwarf</option>
+                    <option value="Human">Human</option>
+                    <option value="Halfling">Halfling</option>
+                    <option value="Half Elf">Half Elf</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="class">Sınıf:</label>
+                <select class="form-control" id="class" name="class" required>
+                    <option value="fighter">Fighter</option>
+                    <option value="ranger">Ranger</option>
+                    <option value="wizard">Wizard</option>
+                    <option value="cleric">Cleric</option>
+                    <option value="monk">Monk</option>
+                    <option value="bard">Bard</option>
+                    <option value="druid">Druid</option>
+                    <option value="rogue">Rogue</option>
+                    <option value="paladin">Paladin</option>
+                    <option value="barbarian">Barbarian</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="strength">Güç:</label>
+                <input type="number" class="form-control" id="strength" name="strength" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="dexterity">Çeviklik:</label>
+                <input type="number" class="form-control" id="dexterity" name="dexterity" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="constitution">Dayanıklılık:</label>
+                <input type="number" class="form-control" id="constitution" name="constitution" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="intelligence">Zeka:</label>
+                <input type="number" class="form-control" id="intelligence" name="intelligence" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="wisdom">Bilgelik:</label>
+                <input type="number" class="form-control" id="wisdom" name="wisdom" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="charisma">Karizma:</label>
+                <input type="number" class="form-control" id="charisma" name="charisma" value="10" required>
+            </div>
+            <div class="form-group">
+                <label for="inventory">Envanter:</label>
+                <input type="text" class="form-control" id="inventory" name="inventory">
+            </div>
+            <div class="form-group">
+                <label for="spells">Büyüler:</label>
+                <input type="text" class="form-control" id="spells" name="spells">
+            </div>
+            <div class="form-group">
+                <label for="biography">Özgeçmiş:</label>
+                <textarea class="form-control" id="biography" name="biography" rows="4"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Oluştur</button>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
