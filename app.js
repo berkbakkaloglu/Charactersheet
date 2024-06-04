@@ -51,17 +51,20 @@ app.get('/', authMiddleware, async (req, res) => {
 
 // Haber Ekleme
 app.post('/api/news', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
-  try {
-    const news = new News({
-      title: req.body.title,
-      content: req.body.content,
-      image: `/uploads/${req.file.filename}`
-    });
-    await news.save();
-    res.redirect('/');
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
+    try {
+        console.log("Haber ekleme isteği alındı.");
+        const news = new News({
+            title: req.body.title,
+            content: req.body.content,
+            image: `/uploads/${req.file.filename}`
+        });
+        await news.save();
+        console.log("Haber başarıyla kaydedildi.");
+        res.redirect('/');
+    } catch (error) {
+        console.error("Haber eklenirken hata oluştu:", error.message);
+        res.status(500).send(error.message);
+    }
 });
 
 // Haber Silme
