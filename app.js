@@ -3,8 +3,10 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const multer = require('multer');
+const multerS3 = require('multer-s3');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const aws = require('aws-sdk');
 const { authMiddleware, adminMiddleware, userMiddleware } = require('./middleware/auth');
 const authRoutes = require('./routes/auth'); 
 const Character = require('./models/Character');
@@ -12,25 +14,31 @@ const News = require('./models/News');
 
 const app = express();
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB bağlantısı başarılı'))
-    .catch(err => console.error('MongoDB bağlantı hatası:', err));
+aws.config.update({
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
+});
+
+const s3 = new aws.S3();
+
+const upload = multer({
+    storage: multerS3({
+        s3: s3,
+        bucket: process.env.AWS_BUCKET_NAME,
+        acl: 'public-read',
+        key: function (req, file, cb) {
+            cb(null, Date.now().toString() + '-' + file.originalname);
+        }
+    })
+});
+
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'public/uploads');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
-});
-
-const upload = multer({ storage: storage });
+app.use(express.static('public'));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -40,28 +48,21 @@ app.use('/auth', authRoutes);
 
 // Haberleri alın ve ana sayfayı render edin
 app.get('/', authMiddleware, async (req, res) => {
-    try {
-        const news = await News.find();
-        res.render('index', { news: news, user: req.user });
-    } catch (error) {
-        console.error('Ana sayfa yüklenirken hata oluştu:', error);
-        res.status(500).send('Sunucu hatası');
-    }
+    const news = await News.find();
+    res.render('index', { news: news, user: req.user });
 });
 
 // Haber Ekleme
 app.post('/api/news', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
     try {
-        console.log('Haber ekleme isteği alındı:', req.body);
         const news = new News({
             title: req.body.title,
             content: req.body.content,
-            image: `/uploads/${req.file.filename}`
+            image: req.file.location
         });
         await news.save();
         res.redirect('/');
     } catch (error) {
-        console.error('Haber eklenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
@@ -72,7 +73,6 @@ app.delete('/api/news/:id', authMiddleware, adminMiddleware, async (req, res) =>
         await News.findByIdAndDelete(req.params.id);
         res.status(200).send({ message: 'Haber başarıyla silindi.' });
     } catch (error) {
-        console.error('Haber silinirken hata oluştu:', error);
         res.status(500).send({ message: error.message });
     }
 });
@@ -111,49 +111,36 @@ app.post('/characters', authMiddleware, async (req, res) => {
         await character.save();
         res.redirect('/characters');
     } catch (error) {
-        console.error('Karakter oluşturulurken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
 
 // Tüm karakterleri listeleme (Kullanıcı ve admin)
 app.get('/characters', authMiddleware, userMiddleware, async (req, res) => {
-    try {
-        const characters = await Character.find();
-        res.render('characters', { characters: characters });
-    } catch (error) {
-        console.error('Karakterler listelenirken hata oluştu:', error);
-        res.status(500).send('Sunucu hatası');
-    }
+    const characters = await Character.find();
+    res.render('characters', { characters: characters });
 });
 
 // Karakter detayları sayfası (Kullanıcı ve admin)
 app.get('/characters/:id', authMiddleware, async (req, res) => {
-    try {
-        const character = await Character.findById(req.params.id);
-        const user = req.user; 
-        res.render('character-details', { character: character, user: user });
-    } catch (error) {
-        console.error('Karakter detayları yüklenirken hata oluştu:', error);
-        res.status(500).send('Sunucu hatası');
-    }
+    const character = await Character.findById(req.params.id);
+    const user = req.user; // Oturum açmış kullanıcıyı al
+    res.render('character-details', { character: character, user: user });
 });
 
 // Avatar Yükleme
 app.post('/api/characters/:id/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
     try {
-        console.log('Avatar yükleme isteği alındı:', req.file);
         const character = await Character.findById(req.params.id);
         if (!character) {
             return res.status(404).send('Karakter bulunamadı');
         }
 
-        character.avatar = `/uploads/${req.file.filename}`;
+        character.avatar = req.file.location;
         await character.save();
 
         res.redirect(`/characters/${character._id}`);
     } catch (error) {
-        console.error('Avatar yüklenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
@@ -173,7 +160,6 @@ app.patch('/api/characters/:id/stats', authMiddleware, adminMiddleware, async (r
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Stat güncellenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
@@ -190,7 +176,6 @@ app.patch('/api/characters/:id/inventory', authMiddleware, async (req, res) => {
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Envanter güncellenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
@@ -207,7 +192,6 @@ app.patch('/api/characters/:id/spells', authMiddleware, adminMiddleware, async (
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Büyü güncellenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
@@ -224,7 +208,6 @@ app.patch('/api/characters/:id/conditions', authMiddleware, adminMiddleware, asy
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Durum güncellenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
@@ -241,7 +224,6 @@ app.patch('/api/characters/:id/biography', authMiddleware, async (req, res) => {
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Özgeçmiş güncellenirken hata oluştu:', error);
         res.status(500).send(error.message);
     }
 });
