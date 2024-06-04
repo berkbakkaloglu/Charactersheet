@@ -15,6 +15,6 @@
     "express": "^4.17.1",
     "mongoose": "^5.12.14",
     "multer": "^1.4.3",
-    "jsonwebtoken": "^8.5.1" // Bu satırın eklendiğinden emin olun
+    "jsonwebtoken": "^8.5.1"
   }
 }
