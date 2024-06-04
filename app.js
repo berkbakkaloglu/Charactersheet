@@ -12,14 +12,13 @@ const News = require('./models/News');
 
 const app = express();
 
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(() => console.log('MongoDB bağlantısı başarılı'))
-    .catch((error) => console.error('MongoDB bağlantı hatası:', error));
+// MongoDB bağlantısı
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -40,39 +39,23 @@ app.use('/auth', authRoutes);
 
 // Haberleri alın ve ana sayfayı render edin
 app.get('/', authMiddleware, async (req, res) => {
-    try {
-        const news = await News.find();
-        res.render('index', { news: news, user: req.user });
-    } catch (error) {
-        console.error('Ana sayfa yüklenirken hata:', error);
-        res.status(500).send('Sunucu hatası');
-    }
+    const news = await News.find();
+    res.render('index', { news: news, user: req.user });
 });
 
 // Haber Ekleme
 app.post('/api/news', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
     try {
-        console.log("Haber ekleme isteği alındı.");
-        console.log("Başlık:", req.body.title);
-        console.log("İçerik:", req.body.content);
-        console.log("Dosya:", req.file);
-
-        if (!req.file) {
-            throw new Error("Dosya yükleme hatası.");
-        }
-
         const news = new News({
             title: req.body.title,
             content: req.body.content,
             image: `/uploads/${req.file.filename}`
         });
-
         await news.save();
-        console.log("Haber başarıyla kaydedildi.");
         res.redirect('/');
     } catch (error) {
-        console.error("Haber eklenirken hata oluştu:", error.message);
-        res.status(500).send({ error: error.message });
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -82,6 +65,7 @@ app.delete('/api/news/:id', authMiddleware, adminMiddleware, async (req, res) =>
         await News.findByIdAndDelete(req.params.id);
         res.status(200).send({ message: 'Haber başarıyla silindi.' });
     } catch (error) {
+        console.error(error);
         res.status(500).send({ message: error.message });
     }
 });
@@ -120,29 +104,22 @@ app.post('/characters', authMiddleware, async (req, res) => {
         await character.save();
         res.redirect('/characters');
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
 // Tüm karakterleri listeleme (Kullanıcı ve admin)
 app.get('/characters', authMiddleware, userMiddleware, async (req, res) => {
-    try {
-        const characters = await Character.find();
-        res.render('characters', { characters: characters });
-    } catch (error) {
-        res.status(500).send('Sunucu hatası');
-    }
+    const characters = await Character.find();
+    res.render('characters', { characters: characters });
 });
 
 // Karakter detayları sayfası (Kullanıcı ve admin)
 app.get('/characters/:id', authMiddleware, async (req, res) => {
-    try {
-        const character = await Character.findById(req.params.id);
-        const user = req.user; // Oturum açmış kullanıcıyı al
-        res.render('character-details', { character: character, user: user });
-    } catch (error) {
-        res.status(500).send('Sunucu hatası');
-    }
+    const character = await Character.findById(req.params.id);
+    const user = req.user;
+    res.render('character-details', { character: character, user: user });
 });
 
 // Avatar Yükleme
@@ -158,7 +135,8 @@ app.post('/api/characters/:id/avatar', authMiddleware, upload.single('avatar'), 
 
         res.redirect(`/characters/${character._id}`);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -177,7 +155,8 @@ app.patch('/api/characters/:id/stats', authMiddleware, adminMiddleware, async (r
         await character.save();
         res.send(character);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -193,7 +172,8 @@ app.patch('/api/characters/:id/inventory', authMiddleware, async (req, res) => {
         await character.save();
         res.send(character);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -209,7 +189,8 @@ app.patch('/api/characters/:id/spells', authMiddleware, adminMiddleware, async (
         await character.save();
         res.send(character);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -225,7 +206,8 @@ app.patch('/api/characters/:id/conditions', authMiddleware, adminMiddleware, asy
         await character.save();
         res.send(character);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
@@ -241,7 +223,8 @@ app.patch('/api/characters/:id/biography', authMiddleware, async (req, res) => {
         await character.save();
         res.send(character);
     } catch (error) {
-        res.status(500).send(error.message);
+        console.error(error);
+        res.status(500).send({ message: error.message });
     }
 });
 
