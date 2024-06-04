@@ -11,7 +11,14 @@ const News = require('./models/News');
 
 const app = express();
 
-mongoose.connect('mongodb://localhost:27017/karakter-yonetim-sistemi');
+
+
+// Local MongoDB URI yerine Atlas URI'yi kullanın
+mongoose.connect('mongodb+srv://berkbakkaloglu:JfRtnB6gWirwUiKy@cluster0.bk8pckr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
