@@ -39,7 +39,18 @@ app.set('views', path.join(__dirname, 'views'));
 // Routes
 app.use('/auth', authRoutes);
 
-// News Routes
+// Home Route
+app.get('/', authMiddleware, async (req, res) => {
+    try {
+        const news = await News.find();
+        res.render('index', { news: news, user: req.user });
+    } catch (error) {
+        console.error('GET / error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Add News
 app.post('/api/news', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
     try {
         const news = new News({
@@ -50,52 +61,28 @@ app.post('/api/news', authMiddleware, adminMiddleware, upload.single('image'), a
         await news.save();
         res.redirect('/');
     } catch (error) {
-        console.error('News POST error:', error);
-        res.status(500).send(error.message);
+        console.error('POST /api/news error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Delete News
 app.delete('/api/news/:id', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         await News.findByIdAndDelete(req.params.id);
         res.status(200).send({ message: 'Haber başarıyla silindi.' });
     } catch (error) {
-        console.error('News DELETE error:', error);
-        res.status(500).send({ message: error.message });
+        console.error('DELETE /api/news/:id error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
-// Character Routes
-app.post('/api/characters/:id/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
-    try {
-        const character = await Character.findById(req.params.id);
-        if (!character) {
-            return res.status(404).send('Karakter bulunamadı');
-        }
-        character.avatar = `/uploads/${req.file.filename}`;
-        await character.save();
-        res.redirect(`/characters/${character._id}`);
-    } catch (error) {
-        console.error('Avatar POST error:', error);
-        res.status(500).send(error.message);
-    }
-});
-
-// Other Character Routes
-app.get('/', authMiddleware, async (req, res) => {
-    try {
-        const news = await News.find();
-        res.render('index', { news: news, user: req.user });
-    } catch (error) {
-        console.error('GET / error:', error);
-        res.status(500).send(error.message);
-    }
-});
-
+// Create Character Route
 app.get('/create-character', authMiddleware, (req, res) => {
     res.render('create-character', { user: req.user });
 });
 
+// Add Character
 app.post('/characters', authMiddleware, async (req, res) => {
     try {
         const { name, height, weight, gender, race, class: charClass, strength, dexterity, constitution, intelligence, wisdom, charisma, inventory, spells, biography } = req.body;
@@ -114,31 +101,50 @@ app.post('/characters', authMiddleware, async (req, res) => {
         await character.save();
         res.redirect('/characters');
     } catch (error) {
-        console.error('Character POST error:', error);
-        res.status(500).send(error.message);
+        console.error('POST /characters error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Get Characters
 app.get('/characters', authMiddleware, userMiddleware, async (req, res) => {
     try {
         const characters = await Character.find();
         res.render('characters', { characters: characters });
     } catch (error) {
         console.error('GET /characters error:', error);
-        res.status(500).send(error.message);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Get Character Details
 app.get('/characters/:id', authMiddleware, async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
         res.render('character-details', { character: character, user: req.user });
     } catch (error) {
         console.error('GET /characters/:id error:', error);
-        res.status(500).send(error.message);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Upload Avatar
+app.post('/api/characters/:id/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+    try {
+        const character = await Character.findById(req.params.id);
+        if (!character) {
+            return res.status(404).send('Karakter bulunamadı');
+        }
+        character.avatar = `/uploads/${req.file.filename}`;
+        await character.save();
+        res.redirect(`/characters/${character._id}`);
+    } catch (error) {
+        console.error('POST /api/characters/:id/avatar error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Update Stats
 app.patch('/api/characters/:id/stats', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
@@ -151,11 +157,12 @@ app.patch('/api/characters/:id/stats', authMiddleware, adminMiddleware, async (r
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Stats PATCH error:', error);
-        res.status(500).send(error.message);
+        console.error('PATCH /api/characters/:id/stats error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Update Inventory
 app.patch('/api/characters/:id/inventory', authMiddleware, async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
@@ -166,11 +173,12 @@ app.patch('/api/characters/:id/inventory', authMiddleware, async (req, res) => {
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Inventory PATCH error:', error);
-        res.status(500).send(error.message);
+        console.error('PATCH /api/characters/:id/inventory error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Update Spells
 app.patch('/api/characters/:id/spells', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
@@ -181,11 +189,12 @@ app.patch('/api/characters/:id/spells', authMiddleware, adminMiddleware, async (
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Spells PATCH error:', error);
-        res.status(500).send(error.message);
+        console.error('PATCH /api/characters/:id/spells error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Update Conditions
 app.patch('/api/characters/:id/conditions', authMiddleware, adminMiddleware, async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
@@ -196,11 +205,12 @@ app.patch('/api/characters/:id/conditions', authMiddleware, adminMiddleware, asy
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Conditions PATCH error:', error);
-        res.status(500).send(error.message);
+        console.error('PATCH /api/characters/:id/conditions error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
+// Update Biography
 app.patch('/api/characters/:id/biography', authMiddleware, async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
@@ -211,8 +221,8 @@ app.patch('/api/characters/:id/biography', authMiddleware, async (req, res) => {
         await character.save();
         res.send(character);
     } catch (error) {
-        console.error('Biography PATCH error:', error);
-        res.status(500).send(error.message);
+        console.error('PATCH /api/characters/:id/biography error:', error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
