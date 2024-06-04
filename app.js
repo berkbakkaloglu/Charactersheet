@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
@@ -14,10 +15,7 @@ const app = express();
 
 
 // Local MongoDB URI yerine Atlas URI'yi kullanın
-mongoose.connect('mongodb+srv://berkbakkaloglu:JfRtnB6gWirwUiKy@cluster0.bk8pckr.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
 
 app.use(bodyParser.urlencoded({ extended: true }));
