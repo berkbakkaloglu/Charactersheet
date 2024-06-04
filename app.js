@@ -3,10 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const multer = require('multer');
-const multerS3 = require('multer-s3');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const aws = require('aws-sdk');
+const { Storage } = require('@google-cloud/storage');
 const { authMiddleware, adminMiddleware, userMiddleware } = require('./middleware/auth');
 const authRoutes = require('./routes/auth'); 
 const Character = require('./models/Character');
@@ -14,31 +13,21 @@ const News = require('./models/News');
 
 const app = express();
 
-aws.config.update({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
+// Google Cloud Storage yapılandırması
+const storage = new Storage({
+  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+  keyFilename: path.join(__dirname, process.env.GOOGLE_CLOUD_KEYFILE),
 });
-
-const s3 = new aws.S3();
-
-const upload = multer({
-    storage: multerS3({
-        s3: s3,
-        bucket: process.env.AWS_BUCKET_NAME,
-        acl: 'public-read',
-        key: function (req, file, cb) {
-            cb(null, Date.now().toString() + '-' + file.originalname);
-        }
-    })
-});
-
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.static('public'));
+
+const multerMiddleware = multer({
+  storage: multer.memoryStorage(),
+});
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -53,15 +42,28 @@ app.get('/', authMiddleware, async (req, res) => {
 });
 
 // Haber Ekleme
-app.post('/api/news', authMiddleware, adminMiddleware, upload.single('image'), async (req, res) => {
+app.post('/api/news', authMiddleware, adminMiddleware, multerMiddleware.single('image'), async (req, res) => {
     try {
-        const news = new News({
-            title: req.body.title,
-            content: req.body.content,
-            image: req.file.location
+        const blob = bucket.file(req.file.originalname);
+        const blobStream = blob.createWriteStream({
+            resumable: false,
         });
-        await news.save();
-        res.redirect('/');
+
+        blobStream.on('error', err => {
+            res.status(500).send({ message: err.message });
+        });
+
+        blobStream.on('finish', async () => {
+            const news = new News({
+                title: req.body.title,
+                content: req.body.content,
+                image: `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET_NAME}/${req.file.originalname}`
+            });
+            await news.save();
+            res.redirect('/');
+        });
+
+        blobStream.end(req.file.buffer);
     } catch (error) {
         res.status(500).send(error.message);
     }
@@ -129,17 +131,29 @@ app.get('/characters/:id', authMiddleware, async (req, res) => {
 });
 
 // Avatar Yükleme
-app.post('/api/characters/:id/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+app.post('/api/characters/:id/avatar', authMiddleware, multerMiddleware.single('avatar'), async (req, res) => {
     try {
         const character = await Character.findById(req.params.id);
         if (!character) {
             return res.status(404).send('Karakter bulunamadı');
         }
 
-        character.avatar = req.file.location;
-        await character.save();
+        const blob = bucket.file(req.file.originalname);
+        const blobStream = blob.createWriteStream({
+            resumable: false,
+        });
 
-        res.redirect(`/characters/${character._id}`);
+        blobStream.on('error', err => {
+            res.status(500).send({ message: err.message });
+        });
+
+        blobStream.on('finish', async () => {
+            character.avatar = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET_NAME}/${req.file.originalname}`;
+            await character.save();
+            res.redirect(`/characters/${character._id}`);
+        });
+
+        blobStream.end(req.file.buffer);
     } catch (error) {
         res.status(500).send(error.message);
     }
