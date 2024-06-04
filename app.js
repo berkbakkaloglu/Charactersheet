@@ -14,8 +14,8 @@ const app = express();
 
 // MongoDB bağlantısını kontrol et
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected...'))
-  .catch(err => console.log(err));
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.log('MongoDB connection error:', err));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
