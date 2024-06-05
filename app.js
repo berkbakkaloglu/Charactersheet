@@ -7,7 +7,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const admin = require('firebase-admin');
 const { authMiddleware, adminMiddleware, userMiddleware } = require('./middleware/auth');
-const authRoutes = require('./routes/auth'); 
+const authRoutes = require('./routes/auth');
 const Character = require('./models/Character');
 const News = require('./models/News');
 
