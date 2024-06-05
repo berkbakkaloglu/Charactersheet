@@ -5,21 +5,25 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const { Storage } = require('@google-cloud/storage');
+const admin = require('firebase-admin');
 const { authMiddleware, adminMiddleware, userMiddleware } = require('./middleware/auth');
-const authRoutes = require('./routes/auth'); 
+const authRoutes = require('./routes/auth');
 const Character = require('./models/Character');
 const News = require('./models/News');
 
-const app = express();
-
-// Google Cloud Storage yapılandırması
-const storage = new Storage({
-  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
-  keyFilename: path.join(__dirname, process.env.GOOGLE_CLOUD_KEYFILE),
+// Firebase Admin SDK yapılandırması
+admin.initializeApp({
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  }),
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
 });
-const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
 
+const bucket = admin.storage().bucket();
+
+const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cookieParser());
@@ -45,9 +49,7 @@ app.get('/', authMiddleware, async (req, res) => {
 app.post('/api/news', authMiddleware, adminMiddleware, multerMiddleware.single('image'), async (req, res) => {
     try {
         const blob = bucket.file(req.file.originalname);
-        const blobStream = blob.createWriteStream({
-            resumable: false,
-        });
+        const blobStream = blob.createWriteStream();
 
         blobStream.on('error', err => {
             res.status(500).send({ message: err.message });
@@ -57,7 +59,7 @@ app.post('/api/news', authMiddleware, adminMiddleware, multerMiddleware.single('
             const news = new News({
                 title: req.body.title,
                 content: req.body.content,
-                image: `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET_NAME}/${req.file.originalname}`
+                image: `https://firebasestorage.googleapis.com/v0/b/${process.env.FIREBASE_STORAGE_BUCKET}/o/${encodeURIComponent(req.file.originalname)}?alt=media`
             });
             await news.save();
             res.redirect('/');
@@ -139,16 +141,14 @@ app.post('/api/characters/:id/avatar', authMiddleware, multerMiddleware.single('
         }
 
         const blob = bucket.file(req.file.originalname);
-        const blobStream = blob.createWriteStream({
-            resumable: false,
-        });
+        const blobStream = blob.createWriteStream();
 
         blobStream.on('error', err => {
             res.status(500).send({ message: err.message });
         });
 
         blobStream.on('finish', async () => {
-            character.avatar = `https://storage.googleapis.com/${process.env.GOOGLE_CLOUD_BUCKET_NAME}/${req.file.originalname}`;
+            character.avatar = `https://firebasestorage.googleapis.com/v0/b/${process.env.FIREBASE_STORAGE_BUCKET}/o/${encodeURIComponent(req.file.originalname)}?alt=media`;
             await character.save();
             res.redirect(`/characters/${character._id}`);
         });
